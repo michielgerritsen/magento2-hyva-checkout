@@ -11,7 +11,6 @@ import ComponentsAction from "Actions/checkout/ComponentsAction";
 import CheckoutSuccessPage from "Pages/frontend/CheckoutSuccessPage";
 import OrdersPage from "Pages/backend/OrdersPage";
 import BackendLogin from "Pages/backend/BackendLogin";
-import HyvaCheckout from "Pages/frontend/HyvaCheckout";
 
 const checkoutPaymentPage = new CheckoutPaymentPage();
 const visitCheckoutPayment = new VisitCheckoutPaymentCompositeAction();
@@ -19,7 +18,6 @@ const components = new ComponentsAction();
 const mollieHostedPaymentPage = new MollieHostedPaymentPage(expect);
 const checkoutSuccessPage = new CheckoutSuccessPage(expect);
 const ordersPage = new OrdersPage();
-const hyvaCheckout = new HyvaCheckout(expect);
 
 test('[C4228286] Validate the submission of an order with Credit Card as payment method using Mollie Components and payment mark as "Paid"', async ({ page }) => {
   test.skip(!process.env.mollie_available_methods.includes('creditcard'), 'Skipping test as Credit Card is not available');
@@ -92,8 +90,6 @@ test('Validate that Mollie Components are unmounted correctly', async ({ page })
 
   await page.getByText('Back to Shipping').click();
 
-  await hyvaCheckout.waitForLoadersToBeHidden(page);
-
   await page.getByText('Proceed to review & payment').waitFor({ state: 'visible' });
 });
 
@@ -106,8 +102,6 @@ test.skip('Validate that Mollie Components are loaded when switching between shi
   await checkoutPaymentPage.selectPaymentMethod(page, 'Credit Card');
 
   await page.getByText('Back to Shipping').click();
-
-  await hyvaCheckout.waitForLoadersToBeHidden(page);
 
   await page.getByText('Proceed to review & payment').click();
 

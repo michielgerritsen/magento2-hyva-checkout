@@ -6,7 +6,7 @@
 import ProductPage from "Pages/frontend/ProductPage";
 import CheckoutPage from "Pages/frontend/CheckoutPage";
 import CheckoutShippingPage from "Pages/frontend/CheckoutShippingPage";
-import { Page } from '@playwright/test';
+import { Page, expect } from '@playwright/test';
 
 const productPage = new ProductPage();
 const checkoutPage = new CheckoutPage();
@@ -24,7 +24,19 @@ export default class VisitCheckoutPaymentCompositeAction {
 
     await checkoutShippingPage.selectFirstAvailableShippingMethod(page);
 
-    await page.getByText('Proceed to review & payment').click();
+    await this.proceedToPayment(page);
+  }
+
+  // The click is ignored while the checkout is still saving the shipping method,
+  // so retry it until the payment step actually renders.
+  async proceedToPayment(page: Page) {
+    await expect(async () => {
+      if (!await page.locator('#payment-method-list').isVisible()) {
+        await page.getByText('Proceed to review & payment').click({ force: true });
+      }
+
+      await expect(page.locator('#payment-method-list')).toBeVisible({ timeout: 5000 });
+    }).toPass({ timeout: 30000 });
   }
 
   async visitAsCustomer(page: Page, fixture = 'NL', quantity = 1) {
