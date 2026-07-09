@@ -3,7 +3,7 @@
  * See COPYING.txt for license details.
  */
 
-import {Page} from '@playwright/test';
+import {expect, Page} from '@playwright/test';
 
 export default class ProductPage {
     /**
@@ -20,11 +20,11 @@ export default class ProductPage {
 
         await page.locator('#search').focus();
 
-        const productTitle = await page.locator('h1 [data-ui-id="page-title-wrapper"]').innerText();
+        const productTitle = (await page.locator('[data-ui-id="page-title-wrapper"]').first().textContent() ?? '').trim();
 
-        await page.locator('#product-addtocart-button').click();
+        await page.locator('#product-addtocart-button').click({ force: true });
         await page.getByText(`You added ${productTitle} to your shopping cart.`).waitFor({ state: 'visible' });
-        await page.locator('#menu-cart-icon span').waitFor({ state: 'visible' });
+        await expect(page.locator('#menu-cart-icon span').first()).toHaveText(/^[1-9][0-9]*$/);
 
         return productTitle;
     }

@@ -10,11 +10,14 @@ export default class MollieHostedPaymentPage {
   }
 
   async selectStatus(page, status) {
-    const element = await page.locator('.copyable').first();
+    // Placing the order and redirecting to the hosted payment page can take a while on a
+    // cold environment, so allow more time than the default action timeout.
+    await this.expect(page).toHaveURL(/https:\/\/www\.mollie\.com\/checkout\//, { timeout: 30000 });
+
+    const element = page.locator('.copyable').first();
+    await element.waitFor({ state: 'visible', timeout: 30000 });
     const text = await element.getAttribute('data-clipboard-text');
     this.incrementId = text.replace('Order ', '');
-
-    await this.expect(page).toHaveURL(/https:\/\/www\.mollie\.com\/checkout\//);
 
     await page.click(`input[value="${status}"]`);
     await page.click('.button');
@@ -29,6 +32,6 @@ export default class MollieHostedPaymentPage {
   }
 
   async selectFirstIssuer(page) {
-    await page.locator('.payment-method-list [name="issuer"]').first().click();
+    await page.locator('.payment-method-list [name="issuer"]').first().click({ timeout: 30000 });
   }
 }

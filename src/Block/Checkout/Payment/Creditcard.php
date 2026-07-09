@@ -43,7 +43,7 @@ class Creditcard extends Template
 
     public function isSavedCardsEnabled(): bool
     {
-        return $this->config->creditcardEnableCustomersApi();
+        return $this->config->creditcardEnableCustomersApi() && $this->config->isProductionMode();
     }
 
     public function isCustomerLoggedIn(): bool

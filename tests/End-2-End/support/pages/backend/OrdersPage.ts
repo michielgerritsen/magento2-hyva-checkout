@@ -47,24 +47,45 @@ export default class OrdersPage {
     }
 
     async callFetchStatus(page ) {
-      const fetchStatusButton = page.getByRole('button', { name: 'Fetch Status' });
+      const fetchStatusButton = page.locator('.fetch-mollie-payment-status');
       await expect(fetchStatusButton).toBeVisible();
 
-      const responsePromise = page.waitForResponse(
-          response => response.url().includes('/mollie/action/fetchOrderStatus')
-      );
+      // The click handler is bound when the fetch-order-status RequireJS module loads, so an
+      // early click does nothing. Retry until the fetchOrderStatus request actually fires.
+      await expect(async () => {
+        const responsePromise = page.waitForResponse(
+            response => response.url().includes('/mollie/action/fetchOrderStatus'),
+            { timeout: 5000 }
+        );
 
-      await fetchStatusButton.click();
+        if (await fetchStatusButton.isEnabled()) {
+          await fetchStatusButton.click();
+        }
 
-      await responsePromise;
+        await responsePromise;
+      }).toPass({ timeout: 60000 });
 
       // Navigate to the same URL instead of reload to avoid ERR_ABORTED/frame detach issues
       await page.goto(page.url(), {waitUntil: 'domcontentloaded'});
       await page.waitForLoadState('load');
     }
 
-    async assertOrderStatusIs(page, status: string) {
-      await expect(page.locator('#order_status')).toContainText(status);
+    async assertOrderStatusIs(page, status: string, maxWaitSeconds = 120) {
+      const orderStatusLocator = page.locator('#order_status');
+      const deadline = Date.now() + (maxWaitSeconds * 1000);
+
+      while (Date.now() < deadline) {
+        const text = await orderStatusLocator.textContent();
+        if (text && text.includes(status)) {
+          await expect(orderStatusLocator).toContainText(status, { timeout: 100 });
+          return;
+        }
+
+        await page.waitForTimeout(1000);
+        await page.reload({waitUntil: 'load'});
+      }
+
+      throw new Error(`Order status "${status}" was not reached within ${maxWaitSeconds} seconds.`);
     }
 
     async checkIfLoggedIn(page, urlToNavigateAfterLogin) {

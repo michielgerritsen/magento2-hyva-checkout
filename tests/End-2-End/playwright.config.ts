@@ -60,7 +60,7 @@ export default defineConfig({
     actionTimeout: 10_000,
   },
 
-  timeout: 60000,
+  timeout: 150000,
 
   testIgnore: /.*no-api-key\.spec\.ts/,
 

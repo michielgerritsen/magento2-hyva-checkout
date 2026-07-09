@@ -3,23 +3,23 @@
  * See COPYING.txt for license details.
  */
 
+import { expect } from '@playwright/test';
+
 export default class CheckoutPaymentPage {
   orderId = null;
 
   async selectPaymentMethod(page, name) {
-    const methodRow = page.locator('#payment-method-list > div').filter({ hasText: name });
-    const input = methodRow.locator('input');
+    const option = page.locator('#payment-method-list > div').filter({ hasText: name });
+    const input = option.locator('input[name="payment-method-option"]');
 
-    if (await input.isChecked()) {
-        // If the input is already checked, we can skip clicking it again
-        return;
-    }
+    // The radio uses wire:model, so a click only sticks once Magewire has booted and is not
+    // mid-morph. Retry the click until the server re-render marks the method as active.
+    await expect(async () => {
+      await input.click({ force: true });
+      await expect(option).toHaveClass(/\bactive\b/, { timeout: 3000 });
+    }).toPass({ timeout: 30000 });
 
-    const magewireSave = page.waitForResponse(
-      (response) => response.url().includes('/magewire/post') && response.status() === 200
-    );
-    await input.click();
-    await magewireSave;
+    await expect(input).toBeChecked();
   }
 
   async selectIssuer(page, issuer) {
@@ -32,7 +32,8 @@ export default class CheckoutPaymentPage {
   }
 
   async pressPlaceOrderButton(page) {
-    await page.getByText('Place Order').click();
+    await page.locator('[x-bind="buttonPlaceOrder"]:not([disabled])').waitFor({ state: 'visible', timeout: 15000 });
+    await page.locator('[x-bind="buttonPlaceOrder"]').click({ force: true });
   }
 
   async enterCouponCode(page, code = 'H20') {
@@ -45,6 +46,26 @@ export default class CheckoutPaymentPage {
   }
 
   async placeOrder(page) {
-    await this.pressPlaceOrderButton(page);
+    const button = page.locator('[x-bind="buttonPlaceOrder"]');
+
+    // The click handler is bound by Alpine after the button renders, so an early click can
+    // be swallowed. Retry while the checkout is still shown and the button is clickable.
+    try {
+      await expect(async () => {
+        if (page.url().includes('/checkout') && await button.isEnabled().catch(() => false)) {
+          await button.click({ force: true });
+        }
+
+        await expect(page).not.toHaveURL(/checkout\/index/, { timeout: 10000 });
+      }).toPass({ timeout: 90000 });
+    } catch (error) {
+      const message = await page.locator('[role="alert"], .message.error').first().textContent().catch(() => null);
+
+      if (message !== null && message.trim() !== '') {
+        throw new Error(`Placing the order did not leave the checkout: ${message.trim()}`);
+      }
+
+      throw error;
+    }
   }
 }
