@@ -13,6 +13,9 @@ use Mollie\Payment\Config;
 
 class Issuer extends Template
 {
+    /**
+     * @param array<string, mixed> $data
+     */
     public function __construct(
         Template\Context $context,
         private readonly Config $config,
@@ -23,7 +26,8 @@ class Issuer extends Template
 
     public function getTemplate(): string
     {
-        $listType = $this->config->getIssuerListType($this->getData('mollie_method'));
+        $method = $this->getData('mollie_method');
+        $listType = $this->config->getIssuerListType(is_string($method) ? $method : '');
 
         if ($listType == 'none') {
             return 'Mollie_HyvaCheckout::component/payment/method/issuer/none.phtml';

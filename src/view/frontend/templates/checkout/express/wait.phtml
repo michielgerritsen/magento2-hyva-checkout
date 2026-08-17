@@ -13,6 +13,8 @@ use Mollie\HyvaCheckout\Magewire\Express\WaitPage;
 /** @var Escaper $escaper */
 /** @var WaitPage $magewire */
 /** @var Template $block */
+
+$paymentToken = $block->getRequest()->getParam('paymentToken');
 ?>
 
 <div x-data="mollieExpressWait()">
@@ -30,7 +32,7 @@ use Mollie\HyvaCheckout\Magewire\Express\WaitPage;
             status: '<?= $escaper->escapeJs($magewire->status) ?>',
             currentStatus: '<?= $escaper->escapeJs($magewire->currentStatus) ?>',
             redirectToCartUrl: '<?= $escaper->escapeJs($magewire->redirectToCartUrl) ?>',
-            token: '<?= $escaper->escapeJs($block->getRequest()->getParam('paymentToken')) ?>',
+            token: '<?= $escaper->escapeJs(is_string($paymentToken) ? $paymentToken : '') ?>',
             waitTime: 100,
 
             init() {

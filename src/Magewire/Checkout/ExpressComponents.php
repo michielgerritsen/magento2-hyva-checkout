@@ -18,6 +18,9 @@ class ExpressComponents extends Component
     public string $clientAccessToken = '';
     public bool $isReady = false;
 
+    /**
+     * @var array<string, string>
+     */
     protected $listeners = [
         'shipping_address_saved' => 'checkReadiness',
         'guest_shipping_address_saved' => 'checkReadiness',

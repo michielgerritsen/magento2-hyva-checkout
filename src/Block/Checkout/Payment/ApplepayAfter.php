@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Mollie\HyvaCheckout\Block\Checkout\Payment;
 
 use Magento\Checkout\Model\Session;
@@ -13,6 +15,9 @@ use Mollie\Payment\Service\Mollie\ApplePay\SupportedNetworks;
 
 class ApplepayAfter extends Template
 {
+    /**
+     * @param array<string, mixed> $data
+     */
     public function __construct(
         Template\Context $context,
         private readonly Config $config,
@@ -45,6 +50,9 @@ class ApplepayAfter extends Template
         return (string)$cart->getQuoteCurrencyCode();
     }
 
+    /**
+     * @return list<string>
+     */
     public function getSupportedNetworks(): array
     {
         return $this->supportedNetworks->execute();

@@ -24,7 +24,7 @@ use Mollie\HyvaCheckout\Magewire\Checkout\Payment\Method\WithTerminal;
                     validate: async function () {
                         if (document.querySelector('.mollie-no-terminal-found') !== null) {
                             hyvaCheckout.payment.dispatchExceptionMessage(
-                                '<?= $escaper->escapeJs(__('No terminals found. Unable to place order using the Point Of Sale method.')) ?>',
+                                '<?= $escaper->escapeJs(__('No terminals found. Unable to place order using the Point Of Sale method.')->render()) ?>',
                                 'error'
                             );
 

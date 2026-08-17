@@ -4,6 +4,8 @@
  * See COPYING.txt for license details.
  */
 
+declare(strict_types=1);
+
 namespace Mollie\HyvaCheckout\Block\Checkout\Payment;
 
 use Magento\Framework\Locale\ResolverInterface;
@@ -12,6 +14,9 @@ use Mollie\Payment\Config;
 
 class CreditcardAfter extends Template
 {
+    /**
+     * @param array<string, mixed> $data
+     */
     public function __construct(
         Template\Context $context,
         private readonly Config $config,

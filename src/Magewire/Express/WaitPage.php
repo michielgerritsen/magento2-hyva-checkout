@@ -44,6 +44,7 @@ class WaitPage extends Component
         }
 
         try {
+            /** @var list<array{status: string}> $order */
             $order = $this->getCustomerOrder->byPaymentToken($this->token);
             $status = $order[0]['status'];
             $this->status = $status;
