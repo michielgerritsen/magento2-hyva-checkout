@@ -12,3 +12,4 @@ parameters:
         - phtml
     excludePaths:
         - Test/*
+        - src/Test/*
