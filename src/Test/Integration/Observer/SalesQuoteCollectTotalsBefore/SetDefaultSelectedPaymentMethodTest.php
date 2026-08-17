@@ -23,7 +23,7 @@ use PHPUnit\Framework\TestCase;
 
 class SetDefaultSelectedPaymentMethodTest extends TestCase
 {
-    private ObjectManager $objectManager;
+    private ?ObjectManager $objectManager = null;
 
     protected function setUp(): void
     {
