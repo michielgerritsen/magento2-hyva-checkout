@@ -3,6 +3,7 @@
 namespace Mollie\HyvaCheckout\Plugin;
 
 use Hyva\Checkout\Model\MethodMetaData;
+use Magento\Payment\Model\MethodInterface;
 use Mollie\Payment\Helper\General as MollieHelper;
 
 class RenderPaymentMethodIcons
@@ -19,13 +20,16 @@ class RenderPaymentMethodIcons
      * meta-data being set. The actual data will be populated by the PopulateIconData plugin.
      * @see \Mollie\HyvaCheckout\Plugin\PopulateIconData
      */
-    public function afterCanRenderIcon(MethodMetaData $subject, $result)
+    public function afterCanRenderIcon(MethodMetaData $subject, bool $result): bool
     {
         if (!$this->mollieHelper->useImage()) {
             return $result;
         }
 
-        if (strpos($subject->getMethod()->getCode(), 'mollie_methods_') === 0) {
+        /** @var MethodInterface $method */
+        $method = $subject->getMethod();
+
+        if (strpos($method->getCode(), 'mollie_methods_') === 0) {
             return true;
         }
 

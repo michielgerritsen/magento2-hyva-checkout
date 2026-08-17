@@ -15,30 +15,29 @@ use Magento\Framework\Event\ObserverInterface;
 use Magento\Framework\Exception\State\InvalidTransitionException;
 use Magento\Payment\Api\Data\PaymentMethodInterface;
 use Magento\Payment\Api\PaymentMethodListInterface;
-use Magento\Quote\Api\Data\PaymentInterfaceFactory;
 use Magento\Quote\Api\PaymentMethodManagementInterface;
 use Magento\Quote\Model\Quote;
 use Mollie\Payment\Config;
 
 class SetDefaultSelectedPaymentMethod implements ObserverInterface
 {
-    private PaymentInterfaceFactory $paymentFactory;
     private Config $config;
     private HyvaCheckoutConfig $hyvaCheckoutConfig;
     private PaymentMethodManagementInterface $paymentMethodManagement;
     private PaymentMethodListInterface $paymentMethodList;
 
+    /**
+     * @var array<int, list<PaymentMethodInterface>>
+     */
     private array $methodList = [];
     private bool $isSettingPaymentMethod = false;
 
     public function __construct(
         HyvaCheckoutConfig $hyvaCheckoutConfig,
         Config $config,
-        PaymentInterfaceFactory $paymentFactory,
         PaymentMethodManagementInterface $paymentMethodManagement,
         PaymentMethodListInterface $paymentMethodList
     ) {
-        $this->paymentFactory = $paymentFactory;
         $this->config = $config;
         $this->hyvaCheckoutConfig = $hyvaCheckoutConfig;
         $this->paymentMethodManagement = $paymentMethodManagement;
@@ -62,7 +61,8 @@ class SetDefaultSelectedPaymentMethod implements ObserverInterface
         }
 
         // Don't override if the quote isn't available yet or if a payment method is already set.
-        if (!$quote->getId() ||
+        $quoteId = $quote->getId();
+        if (!is_numeric($quoteId) ||
             !$this->config->getApiKey($storeId) ||
             $this->quoteHasActivePaymentMethod($quote)) {
             return;
@@ -77,7 +77,7 @@ class SetDefaultSelectedPaymentMethod implements ObserverInterface
             $defaultMethod = $this->getFirstAvailableMollieMethod($storeId);
         }
 
-        if ($defaultMethod && !$this->isMethodActive($defaultMethod, $storeId)) {
+        if (!$defaultMethod || !$this->isMethodActive($defaultMethod, $storeId)) {
             return;
         }
 
@@ -86,8 +86,7 @@ class SetDefaultSelectedPaymentMethod implements ObserverInterface
             return;
         }
 
-        /** @var \Magento\Quote\Api\Data\PaymentInterface $payment */
-        $payment = $quote->getPayment() ?: $this->paymentFactory->create();
+        $payment = $quote->getPayment();
         $payment->setMethod($defaultMethod);
 
         $quote->setPayment($payment);
@@ -98,7 +97,7 @@ class SetDefaultSelectedPaymentMethod implements ObserverInterface
 
         $this->isSettingPaymentMethod = true;
         try {
-            $this->paymentMethodManagement->set($quote->getId(), $payment);
+            $this->paymentMethodManagement->set((int)$quoteId, $payment);
         } catch (InvalidTransitionException $exception) {
             // We are not able to set the payment method. Probably the address is not set yet.
         } finally {
@@ -162,10 +161,13 @@ class SetDefaultSelectedPaymentMethod implements ObserverInterface
         return null;
     }
 
+    /**
+     * @return list<PaymentMethodInterface>
+     */
     private function getMethodList(?int $storeId): array
     {
         if (!array_key_exists((int)$storeId, $this->methodList)) {
-            $this->methodList[(int)$storeId] = $this->paymentMethodList->getList($storeId);
+            $this->methodList[(int)$storeId] = $this->paymentMethodList->getList((int)$storeId);
         }
 
         return $this->methodList[(int)$storeId];

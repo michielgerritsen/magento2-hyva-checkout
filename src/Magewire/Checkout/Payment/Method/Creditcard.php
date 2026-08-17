@@ -4,6 +4,8 @@
  *  See COPYING.txt for license details.
  */
 
+declare(strict_types=1);
+
 namespace Mollie\HyvaCheckout\Magewire\Checkout\Payment\Method;
 
 use Magento\Checkout\Model\Session as SessionCheckout;
@@ -18,6 +20,9 @@ use Rakit\Validation\Validator;
  */
 class Creditcard extends Form
 {
+    /**
+     * @var array<string, string>
+     */
     protected $rules = [
         'cardToken' => 'required',
     ];

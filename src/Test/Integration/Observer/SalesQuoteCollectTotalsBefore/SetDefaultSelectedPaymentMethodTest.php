@@ -17,6 +17,7 @@ use Magento\TestFramework\Helper\Bootstrap;
 use Magento\TestFramework\ObjectManager;
 use Mollie\HyvaCheckout\Observer\SalesQuoteCollectTotalsBefore\SetDefaultSelectedPaymentMethod;
 use Mollie\HyvaCheckout\Test\Fakes\Observer\CountingObserverFake;
+use Mollie\HyvaCheckout\Test\Fakes\Payment\Api\PaymentMethodListFake;
 use Mollie\HyvaCheckout\Test\Fakes\Quote\Api\PaymentMethodManagementFake;
 use PHPUnit\Framework\TestCase;
 
@@ -118,6 +119,30 @@ class SetDefaultSelectedPaymentMethodTest extends TestCase
      * @magentoConfigFixture default_store payment/mollie_general/enabled 1
      * @magentoConfigFixture default_store payment/mollie_general/type test
      * @magentoConfigFixture default_store payment/mollie_general/apikey_test test_dummyapikeywhichmustbe30characterslong
+     * @magentoConfigFixture default_store payment/mollie_general/default_selected_method first_mollie_method
+     * @magentoConfigFixture default_store hyva_themes_checkout/general/checkout default
+     */
+    public function testLeavesTheQuoteAloneWhenNoMollieMethodIsAvailable(): void
+    {
+        $quote = $this->loadQuote();
+        $quote->getPayment()->setMethod(null);
+
+        $paymentMethodManagement = $this->objectManager->create(PaymentMethodManagementFake::class);
+
+        $this->createObserver($paymentMethodManagement, new PaymentMethodListFake())
+            ->execute($this->createEvent($quote));
+
+        $this->assertEquals(0, $paymentMethodManagement->getNumberOfTimesSetWasCalled());
+        $this->assertNull($quote->getPayment()->getMethod());
+    }
+
+    /**
+     * @magentoAppArea frontend
+     * @magentoDbIsolation enabled
+     * @magentoDataFixture Magento/Checkout/_files/quote_with_address_saved.php
+     * @magentoConfigFixture default_store payment/mollie_general/enabled 1
+     * @magentoConfigFixture default_store payment/mollie_general/type test
+     * @magentoConfigFixture default_store payment/mollie_general/apikey_test test_dummyapikeywhichmustbe30characterslong
      * @magentoConfigFixture default_store payment/mollie_general/default_selected_method mollie_methods_ideal
      * @magentoConfigFixture default_store payment/mollie_methods_ideal/active 1
      * @magentoConfigFixture default_store hyva_themes_checkout/general/checkout default
@@ -137,11 +162,16 @@ class SetDefaultSelectedPaymentMethodTest extends TestCase
     }
 
     private function createObserver(
-        PaymentMethodManagementFake $paymentMethodManagement
+        PaymentMethodManagementFake $paymentMethodManagement,
+        ?PaymentMethodListFake $paymentMethodList = null
     ): SetDefaultSelectedPaymentMethod {
-        return $this->objectManager->create(SetDefaultSelectedPaymentMethod::class, [
-            'paymentMethodManagement' => $paymentMethodManagement,
-        ]);
+        $arguments = ['paymentMethodManagement' => $paymentMethodManagement];
+
+        if ($paymentMethodList !== null) {
+            $arguments['paymentMethodList'] = $paymentMethodList;
+        }
+
+        return $this->objectManager->create(SetDefaultSelectedPaymentMethod::class, $arguments);
     }
 
     private function createEvent(Quote $quote): Observer

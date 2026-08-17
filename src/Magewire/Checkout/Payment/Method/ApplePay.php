@@ -4,6 +4,8 @@
  *  See COPYING.txt for license details.
  */
 
+declare(strict_types=1);
+
 namespace Mollie\HyvaCheckout\Magewire\Checkout\Payment\Method;
 
 use Magento\Checkout\Model\Session;
@@ -13,6 +15,9 @@ use Rakit\Validation\Validator;
 
 class ApplePay extends Form
 {
+    /**
+     * @var array<string, string>
+     */
     protected $listeners = [
         'shipping_method_selected' => 'refresh',
         'coupon_code_applied' => 'refresh',
@@ -44,7 +49,7 @@ class ApplePay extends Form
 
     public function boot(): void
     {
-        $this->amount = $this->checkoutSession->getQuote()->getGrandTotal();
+        $this->amount = (string)$this->checkoutSession->getQuote()->getGrandTotal();
     }
 
     public function setApplePayPaymentToken(string $token): string

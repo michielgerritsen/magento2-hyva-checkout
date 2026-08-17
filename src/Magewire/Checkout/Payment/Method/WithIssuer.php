@@ -4,13 +4,14 @@
  * See COPYING.txt for license details.
  */
 
+declare(strict_types=1);
+
 namespace Mollie\HyvaCheckout\Magewire\Checkout\Payment\Method;
 
 use Magento\Checkout\Model\Session as SessionCheckout;
 use Magento\Quote\Api\CartRepositoryInterface;
 use Magewirephp\Magewire\Component\Form;
 use Mollie\Payment\Service\Mollie\GetIssuers;
-use Mollie\Payment\Service\Mollie\MollieApiClient;
 use Rakit\Validation\Validator;
 
 /**
@@ -18,10 +19,16 @@ use Rakit\Validation\Validator;
  */
 class WithIssuer extends Form
 {
+    /**
+     * @var array<string, string>
+     */
     protected $rules = [
         'mollie_issuer' => 'required',
     ];
 
+    /**
+     * @var list<array{id: string, name: string, image: array{size1x: string, size2x: string, svg: string}}>
+     */
     public array $issuers = [];
 
     public string $selectedIssuer = '';
@@ -29,8 +36,6 @@ class WithIssuer extends Form
     private SessionCheckout $sessionCheckout;
 
     private CartRepositoryInterface $quoteRepository;
-
-    private MollieApiClient $mollieApiClient;
 
     private GetIssuers $getIssuers;
 
@@ -40,13 +45,11 @@ class WithIssuer extends Form
         Validator $validator,
         SessionCheckout $sessionCheckout,
         CartRepositoryInterface $quoteRepository,
-        MollieApiClient $mollieApiClient,
         GetIssuers $getIssuers,
         string $method
     ) {
         parent::__construct($validator);
         $this->sessionCheckout = $sessionCheckout;
-        $this->mollieApiClient = $mollieApiClient;
         $this->getIssuers = $getIssuers;
         $this->quoteRepository = $quoteRepository;
         $this->method = $method;
@@ -56,9 +59,11 @@ class WithIssuer extends Form
     {
         $quote = $this->sessionCheckout->getQuote();
 
-        $this->issuers = $this->getIssuers->execute($this->method, 'list');
+        $this->issuers = $this->getIssuers->execute($this->method, 'list') ?? [];
 
-        if ($selectedIssuer = $quote->getPayment()->getAdditionalInformation('selected_issuer')) {
+        $selectedIssuer = $quote->getPayment()->getAdditionalInformation('selected_issuer');
+
+        if (is_string($selectedIssuer)) {
             $this->selectedIssuer = $selectedIssuer;
         }
     }

@@ -4,6 +4,8 @@
  *  See COPYING.txt for license details.
  */
 
+declare(strict_types=1);
+
 namespace Mollie\HyvaCheckout\Service;
 
 use Hyva\Checkout\Model\Magewire\Component\EvaluationResultFactory;
@@ -72,7 +74,7 @@ class PlaceOrderService extends AbstractPlaceOrderService
 
     public function getRedirectUrl(Quote $quote, ?int $orderId = null): string
     {
-        $order = $this->orderRepository->get($orderId);
+        $order = $this->orderRepository->get((int)$orderId);
         /** @var \Mollie\Payment\Model\Mollie $method */
         $method = $quote->getPayment()->getMethodInstance();
 
