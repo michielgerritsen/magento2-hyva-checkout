@@ -14,19 +14,18 @@ jobs:
               if: "${{ env.HYVA_SSH_PRIVATE_KEY != '' }}"
               run: echo "is_hyva_ssh_private_key_set=true" >> $GITHUB_OUTPUT
 
-    build:
+    analyse:
         needs:
             - secrets-gate
         if: needs.secrets-gate.outputs.is-secret-set == 'true'
         strategy:
+            fail-fast: false
             matrix:
                 include:
                     - PHP_VERSION: php82-fpm
                       MAGENTO_VERSION: 2.4.7-p8
                     - PHP_VERSION: php84-fpm
                       MAGENTO_VERSION: 2.4.9
-
-        name: PHP ${{ matrix.PHP_VERSION }} Magento ${{ matrix.MAGENTO_VERSION }}
 
         runs-on: ubuntu-latest
         steps:
