@@ -59,7 +59,10 @@ class WithIssuer extends Form
     {
         $quote = $this->sessionCheckout->getQuote();
 
-        $this->issuers = $this->getIssuers->execute($this->method, 'list') ?? [];
+        /** @var list<array{id: string, name: string, image: array{size1x: string, size2x: string, svg: string}}> $issuers */
+        $issuers = $this->getIssuers->execute($this->method, 'list') ?? [];
+
+        $this->issuers = $issuers;
 
         $selectedIssuer = $quote->getPayment()->getAdditionalInformation('selected_issuer');
 

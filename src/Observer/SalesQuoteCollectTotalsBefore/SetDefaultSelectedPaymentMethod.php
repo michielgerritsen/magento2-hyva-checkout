@@ -27,7 +27,7 @@ class SetDefaultSelectedPaymentMethod implements ObserverInterface
     private PaymentMethodListInterface $paymentMethodList;
 
     /**
-     * @var array<int, list<PaymentMethodInterface>>
+     * @var array<int, array<PaymentMethodInterface>>
      */
     private array $methodList = [];
     private bool $isSettingPaymentMethod = false;
@@ -162,7 +162,7 @@ class SetDefaultSelectedPaymentMethod implements ObserverInterface
     }
 
     /**
-     * @return list<PaymentMethodInterface>
+     * @return array<PaymentMethodInterface>
      */
     private function getMethodList(?int $storeId): array
     {

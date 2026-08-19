@@ -55,7 +55,10 @@ class ApplepayAfter extends Template
      */
     public function getSupportedNetworks(): array
     {
-        return $this->supportedNetworks->execute();
+        /** @var list<string> $networks */
+        $networks = $this->supportedNetworks->execute();
+
+        return $networks;
     }
 
     public function getStoreName(): string

@@ -63,7 +63,10 @@ class Creditcard extends Template
             return [];
         }
 
-        return $this->getCustomerMandates->execute((int)$this->customerSession->getCustomerId());
+        /** @var list<array{mandate_id: string, card_label: string, card_number_last4: string, card_expiry_date: string|null, card_holder: string|null}> $mandates */
+        $mandates = $this->getCustomerMandates->execute((int)$this->customerSession->getCustomerId());
+
+        return $mandates;
     }
 
     public function getCardLogoUrl(string $cardLabel): string
