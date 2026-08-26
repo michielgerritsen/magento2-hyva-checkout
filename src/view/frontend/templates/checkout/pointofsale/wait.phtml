@@ -12,11 +12,11 @@ declare(strict_types=1);
 ?>
 
 <div wire:poll.1s.keep-alive="fetchOrderStatus">
-    <div><?= $escaper->escapeHtml(__('Order #%1', $magewire->incrementId)); ?></div>
+    <div><?= $escaper->escapeHtml(__('Order #%1', $magewire->incrementId)->render()); ?></div>
     <div><?= $escaper->escapeHtml($magewire->currentStatus); ?></div>
 
     <?php if ($magewire->status == 'canceled'): ?>
-        <button class="btn btn-primary mt-4" wire:click="retryOrder"><?= $escaper->escapeHtml(__('Retry')); ?></button>
+        <button class="btn btn-primary mt-4" wire:click="retryOrder"><?= $escaper->escapeHtml(__('Retry')->render()); ?></button>
     <?php endif; ?>
 
     <?php if ($magewire->status == 'processing'): ?>

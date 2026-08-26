@@ -32,19 +32,19 @@ class WithTerminal extends Component
         $quote = $this->sessionCheckout->getQuote();
         $terminalId = $quote->getPayment()->getAdditionalInformation('selected_terminal');
 
-        if ($terminalId) {
+        if (is_string($terminalId)) {
             $this->selectedTerminal = $terminalId;
         }
     }
 
     /**
-     * @return array{
+     * @return list<array{
      *      id: string,
      *      brand: string,
      *      model: string,
      *      serialNumber: string|null,
      *      description: string
-     *  }
+     *  }>
      */
     public function getTerminals(): array
     {

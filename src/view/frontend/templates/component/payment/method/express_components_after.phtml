@@ -42,7 +42,7 @@ use Magento\Framework\View\Element\Template;
 
             renderComponent() {
                 const checkout = Mollie2.Checkout(wire().clientAccessToken);
-                const component = checkout.create('express-checkout', {
+                const component = checkout.create('express-component', {
                     paymentMethods: {
                         idealcheckout: 'never',
                         applepay: 'auto',

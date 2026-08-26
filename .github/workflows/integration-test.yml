@@ -1,4 +1,4 @@
-name: phpstan
+name: Integration Tests
 on: [push, pull_request, workflow_dispatch]
 
 jobs:
@@ -14,7 +14,7 @@ jobs:
               if: "${{ env.HYVA_SSH_PRIVATE_KEY != '' }}"
               run: echo "is_hyva_ssh_private_key_set=true" >> $GITHUB_OUTPUT
 
-    analyse:
+    test:
         needs:
             - secrets-gate
         if: needs.secrets-gate.outputs.is-secret-set == 'true'
@@ -52,5 +52,5 @@ jobs:
             - name: Activate the extensions
               run: docker exec magento-project-community-edition ./retry "php bin/magento module:enable Mollie_Payment Mollie_HyvaCheckout && php bin/magento setup:di:compile && php bin/magento setup:upgrade --keep-generated"
 
-            - name: Run PHPStan
-              run: docker exec magento-project-community-edition /bin/bash -c "./vendor/bin/phpstan analyse --no-progress -c /data/extensions/*/phpstan.neon /data/extensions"
+            - name: Run tests
+              run: docker exec magento-project-community-edition bash -c "cd /data/dev/tests/integration/ && /data/vendor/bin/phpunit -c /data/dev/tests/integration/phpunit.xml /data/vendor/mollie/magento2-hyva-checkout/src/Test/Integration"

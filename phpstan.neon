@@ -1,5 +1,5 @@
 parameters:
-    level: 2
+    level: 9
     reportUnmatchedIgnoredErrors: false
     ignoreErrors:
         - '#^Call to an undefined method .*Interface::.*\(\)\.$#'
@@ -7,8 +7,23 @@ parameters:
         - '#Method Magento\\Sales\\Api\\Data\\OrderPaymentInterface::getAdditionalInformation\(\) invoked with 1 parameter, 0 required.#'
         - '#Method Magento\\Quote\\Api\\Data\\PaymentInterface::setAdditionalInformation\(\) invoked with 2 parameters, 1 required.#'
         - '#Method Magento\\Quote\\Api\\Data\\PaymentInterface::getAdditionalInformation\(\) invoked with 1 parameter, 0 required.#'
+        # Magento before 2.4.9 annotates Escaper::escapeHtml() as "@return string|array", so every
+        # template that echoes it fails from level 7 up. 2.4.9 replaced it with a conditional return
+        # type. Drop both entries once 2.4.7 is out of the supported matrix.
+        -
+            message: '#of echo cannot be converted to string#'
+            path: src/view/*
+        -
+            message: '#Binary operation "\." between .* and array\|string results in an error\.#'
+            path: src/view/*
+        # Magento annotates its DataObject-backed getters as "@return string", but Quote\Payment::getMethod()
+        # and Address::getCountryId() both read unset data and return null until a value is written.
+        -
+            identifier: notIdentical.alwaysTrue
+            path: src/Observer/SalesQuoteCollectTotalsBefore/SetDefaultSelectedPaymentMethod.php
     fileExtensions:
         - php
         - phtml
     excludePaths:
         - Test/*
+        - src/Test/*

@@ -4,6 +4,8 @@
  * See COPYING.txt for license details.
  */
 
+declare(strict_types=1);
+
 use Magento\Framework\Escaper;
 use Mollie\HyvaCheckout\Block\Checkout\Payment\Creditcard;
 
@@ -37,9 +39,9 @@ $showConsentCheckbox = $block->isSavedCardsEnabled()
                             />
                         <?php endif ?>
                         <?= $escaper->escapeHtml($mandate['card_label']) ?>
-                        <?= $escaper->escapeHtml(__('Card ending in %1', $mandate['card_number_last4'])) ?>
+                        <?= $escaper->escapeHtml(__('Card ending in %1', $mandate['card_number_last4'])->render()) ?>
                         <?php if (($mandate['card_expiry_date'] ?? '') !== ''): ?>
-                            (<?= $escaper->escapeHtml(__('expires %1', $mandate['card_expiry_date'])) ?>)
+                            (<?= $escaper->escapeHtml(__('expires %1', $mandate['card_expiry_date'])->render()) ?>)
                         <?php endif ?>
                     </label>
                 </li>
@@ -54,7 +56,7 @@ $showConsentCheckbox = $block->isSavedCardsEnabled()
                                value=""
                                checked
                         />
-                        <?= $escaper->escapeHtml(__('Use a new card')) ?>
+                        <?= $escaper->escapeHtml(__('Use a new card')->render()) ?>
                     </label>
                 </li>
             <?php endif ?>

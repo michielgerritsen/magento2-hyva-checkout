@@ -49,7 +49,9 @@ class PointOfSaleWait extends Component
 
     public function mount(): void
     {
-        $this->token = $this->requestInterface->getParam('token');
+        $token = $this->requestInterface->getParam('token');
+
+        $this->token = is_string($token) ? $token : '';
         $this->currentStatus = __('Current Status: Loading...')->render();
 
         $this->fetchOrderStatus();
@@ -63,10 +65,11 @@ class PointOfSaleWait extends Component
         }
 
         // This retrieves the status directly from Mollie
+        /** @var list<array{increment_id: string|null, status: string}> $order */
         $order = $this->getCustomerOrder->byHash($this->token);
         $status = $order[0]['status'];
         $this->status = $status;
-        $this->incrementId = $order[0]['increment_id'];
+        $this->incrementId = (string)$order[0]['increment_id'];
         $this->currentStatus = __('Current Status: %1', ucfirst($status))->render();
 
         if ($status == 'processing') {
@@ -92,6 +95,6 @@ class PointOfSaleWait extends Component
     {
         $orderId = $this->encryptor->decrypt(base64_decode($this->token));
 
-        return $this->orderRepository->get($orderId);
+        return $this->orderRepository->get((int)$orderId);
     }
 }

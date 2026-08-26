@@ -15,30 +15,29 @@ use Magento\Framework\Event\ObserverInterface;
 use Magento\Framework\Exception\State\InvalidTransitionException;
 use Magento\Payment\Api\Data\PaymentMethodInterface;
 use Magento\Payment\Api\PaymentMethodListInterface;
-use Magento\Quote\Api\Data\PaymentInterfaceFactory;
 use Magento\Quote\Api\PaymentMethodManagementInterface;
 use Magento\Quote\Model\Quote;
 use Mollie\Payment\Config;
 
 class SetDefaultSelectedPaymentMethod implements ObserverInterface
 {
-    private PaymentInterfaceFactory $paymentFactory;
     private Config $config;
     private HyvaCheckoutConfig $hyvaCheckoutConfig;
     private PaymentMethodManagementInterface $paymentMethodManagement;
     private PaymentMethodListInterface $paymentMethodList;
 
+    /**
+     * @var array<int, array<PaymentMethodInterface>>
+     */
     private array $methodList = [];
-    private int $storeId;
+    private bool $isSettingPaymentMethod = false;
 
     public function __construct(
         HyvaCheckoutConfig $hyvaCheckoutConfig,
         Config $config,
-        PaymentInterfaceFactory $paymentFactory,
         PaymentMethodManagementInterface $paymentMethodManagement,
         PaymentMethodListInterface $paymentMethodList
     ) {
-        $this->paymentFactory = $paymentFactory;
         $this->config = $config;
         $this->hyvaCheckoutConfig = $hyvaCheckoutConfig;
         $this->paymentMethodManagement = $paymentMethodManagement;
@@ -50,28 +49,35 @@ class SetDefaultSelectedPaymentMethod implements ObserverInterface
         /** @var Quote $quote */
         $quote = $observer->getData('quote');
 
-        if (!$this->config->isModuleEnabled((int)$quote->getStoreId())) {
+        // Setting the payment method reloads and saves the quote, which collects the totals again.
+        // Without this guard that re-enters this observer until the memory limit is reached.
+        if ($this->isSettingPaymentMethod) {
+            return;
+        }
+
+        $storeId = storeId($quote->getStoreId());
+        if (!$this->config->isModuleEnabled($storeId)) {
             return;
         }
 
         // Don't override if the quote isn't available yet or if a payment method is already set.
-        if (!$quote->getId() ||
-            !$this->config->getApiKey((int)$quote->getStoreId()) ||
+        $quoteId = $quote->getId();
+        if (!is_numeric($quoteId) ||
+            !$this->config->getApiKey($storeId) ||
             $this->quoteHasActivePaymentMethod($quote)) {
             return;
         }
 
-        $this->storeId = (int)$quote->getStoreId();
         $defaultMethod = $this->config->getDefaultSelectedMethod();
         if (!$defaultMethod) {
             return;
         }
 
         if ($defaultMethod == 'first_mollie_method') {
-            $defaultMethod = $this->getFirstAvailableMollieMethod();
+            $defaultMethod = $this->getFirstAvailableMollieMethod($storeId);
         }
 
-        if ($defaultMethod && !$this->isMethodActive($defaultMethod)) {
+        if (!$defaultMethod || !$this->isMethodActive($defaultMethod, $storeId)) {
             return;
         }
 
@@ -80,24 +86,31 @@ class SetDefaultSelectedPaymentMethod implements ObserverInterface
             return;
         }
 
-        /** @var \Magento\Quote\Api\Data\PaymentInterface $payment */
-        $payment = $quote->getPayment() ?: $this->paymentFactory->create();
+        $payment = $quote->getPayment();
         $payment->setMethod($defaultMethod);
 
         $quote->setPayment($payment);
+
+        if (!$this->quoteCanAcceptPaymentMethod($quote)) {
+            return;
+        }
+
+        $this->isSettingPaymentMethod = true;
         try {
-            $this->paymentMethodManagement->set($quote->getId(), $payment);
+            $this->paymentMethodManagement->set((int)$quoteId, $payment);
         } catch (InvalidTransitionException $exception) {
             // We are not able to set the payment method. Probably the address is not set yet.
+        } finally {
+            $this->isSettingPaymentMethod = false;
         }
     }
 
     /**
      * Check if that method is enabled for the current store
      */
-    private function isMethodActive(string $methodCode): bool
+    private function isMethodActive(string $methodCode, ?int $storeId): bool
     {
-        $methods = $this->getMethodList();
+        $methods = $this->getMethodList($storeId);
 
         /** @var PaymentMethodInterface $method */
         foreach ($methods as $method) {
@@ -119,15 +132,27 @@ class SetDefaultSelectedPaymentMethod implements ObserverInterface
         return $quote->getPayment()->getMethod() !== null;
     }
 
-    private function getFirstAvailableMollieMethod(): ?string
+    /**
+     * A quote without a shipping country is rejected by PaymentMethodManagement::set()
+     */
+    private function quoteCanAcceptPaymentMethod(Quote $quote): bool
     {
-        $methods = $this->getMethodList();
+        if ($quote->isVirtual()) {
+            return true;
+        }
+
+        return $quote->getShippingAddress()->getCountryId() !== null;
+    }
+
+    private function getFirstAvailableMollieMethod(?int $storeId): ?string
+    {
+        $methods = $this->getMethodList($storeId);
 
         foreach ($methods as $method) {
             $methodCode = $method->getCode();
             if (strpos($methodCode, 'mollie_') === 0 &&
                 $methodCode != 'mollie_methods_applepay' &&
-                $this->isMethodActive($methodCode)
+                $this->isMethodActive($methodCode, $storeId)
             ) {
                 return $methodCode;
             }
@@ -136,13 +161,15 @@ class SetDefaultSelectedPaymentMethod implements ObserverInterface
         return null;
     }
 
-    private function getMethodList(): array
+    /**
+     * @return array<PaymentMethodInterface>
+     */
+    private function getMethodList(?int $storeId): array
     {
-        if ($this->methodList !== []) {
-            return $this->methodList;
+        if (!array_key_exists((int)$storeId, $this->methodList)) {
+            $this->methodList[(int)$storeId] = $this->paymentMethodList->getList((int)$storeId);
         }
 
-        $this->methodList = $this->paymentMethodList->getList($this->storeId);
-        return $this->methodList;
+        return $this->methodList[(int)$storeId];
     }
 }
